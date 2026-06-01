@@ -30,14 +30,25 @@ export default function Login() {
         role: ''
       };
 
-      if (trimmedId === 'U001') {
-        userData.nama = 'Budi Raharjo (Admin)';
-        userData.nim = '123210001';
-        userData.role = 'Admin';
+      const userDatabase = {
+        'U001': { nama: 'Adri Chan', nim: '26053001', role: 'Admin' },
+        'U002': { nama: 'Budi Santoso', nim: '26053002', role: 'Member' },
+        'U003': { nama: 'Citra Lestari', nim: '26053003', role: 'Member' },
+        'U004': { nama: 'Dedi Kurniawan', nim: '26053004', role: 'Member' },
+        'U005': { nama: 'Elvira Sukma', nim: '26053005', role: 'Member' },
+        'U006': { nama: 'Farhan Malik', nim: '26053006', role: 'Member' }
+      };
+
+      const matchedUser = userDatabase[trimmedId];
+
+      if (matchedUser) {
+        userData.nama = matchedUser.nama;
+        userData.nim = matchedUser.nim;
+        userData.role = matchedUser.role;
       } else {
-        // Dummy default untuk id_user lain
-        userData.nama = trimmedId === 'U002' ? 'Siti Aminah (Member)' : `Anggota (${trimmedId})`;
-        userData.nim = trimmedId === 'U002' ? '123210002' : '123210999';
+        // Fallback default untuk id_user lain
+        userData.nama = `Anggota (${trimmedId})`;
+        userData.nim = '260530999';
         userData.role = 'Member';
       }
 
@@ -113,8 +124,8 @@ export default function Login() {
           <div className="p-4 bg-emerald-50/50 border border-emerald-100/50 rounded-2xl text-xs text-slate-600">
             <span className="font-semibold text-emerald-800 block mb-1">Panduan Pengujian:</span>
             <ul className="list-disc list-inside space-y-1 text-slate-500">
-              <li>Masukkan <strong className="text-emerald-700 font-bold">U001</strong> untuk login sebagai <strong className="text-slate-700">Admin</strong></li>
-              <li>Masukkan <strong className="text-emerald-700 font-bold">U002</strong> (atau ID lain) untuk login sebagai <strong className="text-slate-700">Member</strong></li>
+              <li>Masukkan <strong className="text-emerald-700 font-bold">U001</strong> untuk <strong className="text-slate-700">Adri Chan (Admin)</strong></li>
+              <li>Masukkan <strong className="text-emerald-700 font-bold">U002</strong> s.d. <strong className="text-emerald-700 font-bold">U006</strong> untuk <strong className="text-slate-700">Member (Budi, Citra, dll)</strong></li>
             </ul>
           </div>
         </form>
