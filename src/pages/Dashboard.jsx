@@ -26,20 +26,22 @@ export default function Dashboard() {
 
     const loadTagihan = async () => {
       setIsLoading(true);
-      // Panggil fetchTagihan menggunakan ID User yang sedang aktif (fallback U001)
       const userId = localUser.id_user || 'U001';
       const response = await fetchTagihan(userId);
       
       if (response && response.status === 'success') {
-        setTagihanList(response.data);
+        // State Reactive: Update tagihanList dari data murni API
+        setTagihanList(response.data || []);
+        
+        // State Reactive: Sinkronisasikan info pengguna jika ada data terbaru dari Sheets API
+        if (response.user) {
+          setUser(response.user);
+          localStorage.setItem('kkn_user', JSON.stringify(response.user));
+        }
       } else {
-        // Dummy data fallback jika API gagal atau kosong agar halaman tetap terlihat menakjubkan
-        setTagihanList([
-          { id_trx: 'T001', id_user: userId, bulan_tagihan: 'Januari 2026', nominal: 50000, status: 'Success', tanggal_bayar: '10/01/2026' },
-          { id_trx: 'T002', id_user: userId, bulan_tagihan: 'Februari 2026', nominal: 50000, status: 'Success', tanggal_bayar: '12/02/2026' },
-          { id_trx: 'T003', id_user: userId, bulan_tagihan: 'Maret 2026', nominal: 50000, status: 'Pending', tanggal_bayar: '' },
-          { id_trx: 'T004', id_user: userId, bulan_tagihan: 'April 2026', nominal: 50000, status: 'Pending', tanggal_bayar: '' }
-        ]);
+        // Clear Cache: Hapus fallback data statis/dummy untuk memastikan murni data Sheets
+        setTagihanList([]);
+        console.warn("Gagal mengambil data tagihan ter-sinkronisasi dari Google Sheets API.");
       }
       setIsLoading(false);
     };
