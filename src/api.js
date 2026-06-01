@@ -91,3 +91,23 @@ export const fetchUsersFromSheet = async () => {
     return null;
   }
 };
+
+// HTTP POST ke Base URL API untuk memperbarui status pembayaran di spreadsheet secara langsung
+export const updatePaymentStatus = async (orderId, transactionStatus) => {
+  try {
+    const response = await fetch(BASE_URL, {
+      method: 'POST',
+      redirect: 'follow', // KRUSIAL UNTUK APPS SCRIPT
+      body: JSON.stringify({
+        transaction_status: transactionStatus,
+        order_id: orderId
+      })
+    });
+    
+    const result = await response.json();
+    return result;
+  } catch (error) {
+    console.error("Gagal memperbarui status pembayaran ke spreadsheet:", error);
+    return { status: 'error', message: 'Gagal menghubungi server pembayaran.' };
+  }
+};

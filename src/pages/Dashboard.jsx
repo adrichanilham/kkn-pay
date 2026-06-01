@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { fetchTagihan, fetchMidtransToken } from '../api';
+import { fetchTagihan, fetchMidtransToken, updatePaymentStatus } from '../api';
 import { 
   CreditCard, 
   CheckCircle, 
@@ -73,8 +73,18 @@ export default function Dashboard() {
 
         if (window.snap) {
           window.snap.pay(token, {
-            onSuccess: function (result) {
-              alert(`Pembayaran Sukses untuk tagihan ${idTrx}!`);
+            onSuccess: async function (result) {
+              alert(`Pembayaran Sukses untuk tagihan ${idTrx}! Menyingkronkan ke Google Sheets...`);
+              try {
+                const res = await updatePaymentStatus(result.order_id, result.transaction_status || 'settlement');
+                if (res && res.status === 'success') {
+                  alert("Data pembayaran sukses disimpan ke Google Sheets!");
+                } else {
+                  console.warn("Gagal menyingkronkan status pembayaran ke Google Sheets:", res?.message);
+                }
+              } catch (e) {
+                console.error(e);
+              }
               updateLocalStatus(idTrx);
             },
             onPending: function (result) {
@@ -327,10 +337,23 @@ export default function Dashboard() {
               {/* Tombol Aksi Simulasi */}
               <div className="grid grid-cols-3 gap-2.5 pt-2">
                 <button
-                  onClick={() => {
-                    updateLocalStatus(selectedTrx.id_trx);
+                  onClick={async () => {
+                    const idTrx = selectedTrx.id_trx;
+                    updateLocalStatus(idTrx);
                     setShowSimulator(false);
-                    alert("Simulasi SUKSES berhasil! Status diperbarui.");
+                    alert("Simulasi SUKSES dipicu! Menyingkronkan ke Google Sheets...");
+                    try {
+                      const orderId = selectedTrx.token ? (idTrx + "-sim") : idTrx;
+                      const res = await updatePaymentStatus(orderId, 'settlement');
+                      if (res && res.status === 'success') {
+                        alert("Simulasi SUKSES berhasil! Status pembayaran di spreadsheet telah diperbarui.");
+                      } else {
+                        alert("Gagal menyingkronkan status pembayaran ke Google Sheets.");
+                      }
+                    } catch (e) {
+                      console.error(e);
+                      alert("Terjadi kesalahan sistem saat memperbarui spreadsheet.");
+                    }
                   }}
                   className="py-3 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-xl text-xs font-semibold transition-all flex flex-col items-center justify-center gap-1.5"
                 >
