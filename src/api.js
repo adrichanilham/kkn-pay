@@ -37,3 +37,25 @@ export const addPengeluaran = async (keterangan, nominal) => {
     return { status: 'error', message: 'Gagal terhubung ke server.' };
   }
 };
+
+// HTTP POST ke Base URL API untuk mengambil Snap Token Midtrans dari backend
+export const fetchMidtransToken = async (idTrx, nominal, idUser) => {
+  try {
+    const response = await fetch(BASE_URL, {
+      method: 'POST',
+      redirect: 'follow', // KRUSIAL UNTUK APPS SCRIPT
+      body: JSON.stringify({
+        action: 'getSnapToken',
+        id_trx: idTrx,
+        nominal: Number(nominal),
+        id_user: idUser
+      })
+    });
+    
+    const result = await response.json();
+    return result;
+  } catch (error) {
+    console.error("Gagal mengambil Snap Token Midtrans:", error);
+    return { status: 'error', message: 'Gagal terhubung ke server pembayaran.' };
+  }
+};

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { fetchTagihan } from '../api';
+import { fetchTagihan, fetchMidtransToken } from '../api';
 import { 
   CreditCard, 
   CheckCircle, 
@@ -17,6 +17,7 @@ export default function Dashboard() {
   const [user, setUser] = useState({});
   const [showSimulator, setShowSimulator] = useState(false);
   const [selectedTrx, setSelectedTrx] = useState(null);
+  const [payingTrxId, setPayingTrxId] = useState(null);
 
   useEffect(() => {
     // Ambil data user dari localStorage
@@ -54,40 +55,48 @@ export default function Dashboard() {
     }).format(num);
   };
 
-  // Fungsi Pembayaran
-  const handlePay = (idTrx, nominal) => {
-    // Tentukan trx yang sedang diproses untuk simulator
-    const trx = tagihanList.find(t => t.id_trx === idTrx);
-    setSelectedTrx(trx);
-
-    // Buat dummy token
-    const dummyToken = `dummy-snap-token-${idTrx}-${Date.now()}`;
-
-    // Periksa apakah Midtrans Snap SDK ter-load
-    if (window.snap) {
-      // Kita panggil window.snap.pay sesuai permintaan
-      window.snap.pay(dummyToken, {
-        onSuccess: function (result) {
-          alert(`Pembayaran Sukses untuk tagihan ${idTrx}!`);
-          updateLocalStatus(idTrx);
-        },
-        onPending: function (result) {
-          alert(`Pembayaran pending/menunggu untuk tagihan ${idTrx}.`);
-        },
-        onError: function (result) {
-          alert(`Pembayaran gagal untuk tagihan ${idTrx}.`);
-        },
-        onClose: function () {
-          console.log('Customer menutup popup pembayaran Midtrans Snap.');
-        }
-      });
+  // Fungsi Pembayaran Baru Terintegrasi API
+  const handlePay = async (idTrx, nominal) => {
+    if (payingTrxId) return; // Cegah klik ganda
+    
+    setPayingTrxId(idTrx);
+    
+    try {
+      const userId = user.id_user || 'U001';
+      const response = await fetchMidtransToken(idTrx, nominal, userId);
       
-      // Karena kita menggunakan dummyToken, Midtrans Snap JS akan menampilkan error modal di iframe.
-      // Oleh karena itu, kita juga sediakan simulator UI internal aplikasi agar mempermudah pengujian.
-      setShowSimulator(true);
-    } else {
-      // Fallback ke Simulator internal jika script diblokir atau gagal load
-      setShowSimulator(true);
+      if (response && response.status === 'success' && response.token) {
+        const token = response.token;
+        setSelectedTrx({ ...tagihanList.find(t => t.id_trx === idTrx), token });
+
+        if (window.snap) {
+          window.snap.pay(token, {
+            onSuccess: function (result) {
+              alert(`Pembayaran Sukses untuk tagihan ${idTrx}!`);
+              updateLocalStatus(idTrx);
+            },
+            onPending: function (result) {
+              alert(`Pembayaran pending/menunggu untuk tagihan ${idTrx}.`);
+            },
+            onError: function (result) {
+              alert(`Pembayaran gagal untuk tagihan ${idTrx}.`);
+            },
+            onClose: function () {
+              console.log('Customer menutup popup pembayaran Midtrans Snap.');
+            }
+          });
+        } else {
+          // Simulator fallback jika script Midtrans diblokir
+          setShowSimulator(true);
+        }
+      } else {
+        alert(response?.message || "Gagal mendapatkan Snap Token dari backend.");
+      }
+    } catch (error) {
+      console.error("Error saat memulai pembayaran:", error);
+      alert("Terjadi kesalahan sistem saat menghubungi server pembayaran.");
+    } finally {
+      setPayingTrxId(null);
     }
   };
 
@@ -253,10 +262,23 @@ export default function Dashboard() {
                   {!isSuccess && (
                     <button
                       onClick={() => handlePay(tagihan.id_trx, tagihan.nominal)}
-                      className="mt-4 w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold shadow-md shadow-emerald-600/10 active:scale-[0.98] transition-all flex items-center justify-center gap-1.5"
+                      disabled={payingTrxId !== null}
+                      className="mt-4 w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-400 text-white rounded-xl text-xs font-semibold shadow-md shadow-emerald-600/10 active:scale-[0.98] transition-all flex items-center justify-center gap-1.5"
                     >
-                      <CreditCard size={14} />
-                      Bayar Sekarang
+                      {payingTrxId === tagihan.id_trx ? (
+                        <>
+                          <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                          </svg>
+                          Memproses...
+                        </>
+                      ) : (
+                        <>
+                          <CreditCard size={14} />
+                          Bayar Sekarang
+                        </>
+                      )}
                     </button>
                   )}
                 </div>
