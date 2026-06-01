@@ -64,3 +64,40 @@ export const fetchMidtransToken = async (idTrx, nominal, idUser) => {
     return { status: 'error', message: 'Gagal terhubung ke server pembayaran.' };
   }
 };
+
+// Mengambil data user langsung dari Google Sheet CSV untuk sinkronisasi nama/role real-time
+export const fetchUsersFromSheet = async () => {
+  try {
+    const timestamp = Date.now();
+    const response = await fetch(`https://docs.google.com/spreadsheets/d/1pRFCiWAQD_4qG9xpUrCen0hESVG8rQAhVi1PF8pixyg/export?format=csv&gid=0&_t=${timestamp}`, {
+      headers: {
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache'
+      }
+    });
+    const csvText = await response.text();
+    
+    // Parse CSV sederhana
+    const lines = csvText.split('\n');
+    if (lines.length < 2) return null;
+    
+    const users = [];
+    const headers = lines[0].split(',').map(h => h.trim().replace(/\r/g, ''));
+    
+    for (let i = 1; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (!line) continue;
+      
+      const values = line.split(',').map(v => v.trim().replace(/\r/g, ''));
+      const user = {};
+      headers.forEach((header, index) => {
+        user[header] = values[index] || '';
+      });
+      users.push(user);
+    }
+    return users;
+  } catch (error) {
+    console.error("Gagal memuat data user dari spreadsheet:", error);
+    return null;
+  }
+};

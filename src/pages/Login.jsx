@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Wallet, KeyRound, AlertCircle } from 'lucide-react';
+import { fetchUsersFromSheet } from '../api';
 
 export default function Login() {
   const [idUser, setIdUser] = useState('');
@@ -8,7 +9,7 @@ export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     setError('');
 
@@ -21,41 +22,62 @@ export default function Login() {
 
     setIsLoading(true);
 
-    // Simulasi loading 800ms agar terasa premium
-    setTimeout(() => {
-      let userData = {
-        id_user: trimmedId,
-        nama: '',
-        nim: '',
-        role: ''
-      };
+    try {
+      let userData = null;
 
-      const userDatabase = {
-        'U001': { nama: 'Adri Chan', nim: '26053001', role: 'Admin' },
-        'U002': { nama: 'Budi Santoso', nim: '26053002', role: 'Member' },
-        'U003': { nama: 'Citra Lestari', nim: '26053003', role: 'Member' },
-        'U004': { nama: 'Dedi Kurniawan', nim: '26053004', role: 'Member' },
-        'U005': { nama: 'Elvira Sukma', nim: '26053005', role: 'Member' },
-        'U006': { nama: 'Farhan Malik', nim: '26053006', role: 'Member' }
-      };
+      // 1. Coba ambil data user secara real-time langsung dari Google Sheet
+      const usersList = await fetchUsersFromSheet();
 
-      const matchedUser = userDatabase[trimmedId];
+      if (usersList) {
+        const found = usersList.find(u => u.id_user.trim().toUpperCase() === trimmedId);
+        if (found) {
+          userData = {
+            id_user: found.id_user,
+            nama: found.nama,
+            nim: found.nim,
+            role: found.role
+          };
+        }
+      }
 
-      if (matchedUser) {
-        userData.nama = matchedUser.nama;
-        userData.nim = matchedUser.nim;
-        userData.role = matchedUser.role;
-      } else {
-        // Fallback default untuk id_user lain
-        userData.nama = `Anggota (${trimmedId})`;
-        userData.nim = '260530999';
-        userData.role = 'Member';
+      // 2. Backup lokal jika Sheet gagal dimuat atau user tidak ditemukan di database online
+      if (!userData) {
+        const userDatabaseBackup = {
+          'U001': { nama: 'Adri Chan', nim: '26053001', role: 'Admin' },
+          'U002': { nama: 'Budi Santoso', nim: '26053002', role: 'Member' },
+          'U003': { nama: 'Citra Lestari', nim: '26053003', role: 'Member' },
+          'U004': { nama: 'Dedi Kurniawan', nim: '26053004', role: 'Member' },
+          'U005': { nama: 'Elvira Sukma', nim: '26053005', role: 'Member' },
+          'U006': { nama: 'Farhan Malik', nim: '26053006', role: 'Member' }
+        };
+
+        const matchedUser = userDatabaseBackup[trimmedId];
+
+        if (matchedUser) {
+          userData = {
+            id_user: trimmedId,
+            nama: matchedUser.nama,
+            nim: matchedUser.nim,
+            role: matchedUser.role
+          };
+        } else {
+          userData = {
+            id_user: trimmedId,
+            nama: `Anggota (${trimmedId})`,
+            nim: '260530999',
+            role: 'Member'
+          };
+        }
       }
 
       localStorage.setItem('kkn_user', JSON.stringify(userData));
-      setIsLoading(false);
       navigate('/');
-    }, 800);
+    } catch (err) {
+      console.error("Gagal melakukan login:", err);
+      setError('Terjadi kesalahan koneksi saat memproses login.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
