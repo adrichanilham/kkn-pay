@@ -313,13 +313,13 @@ export default function Dashboard() {
                   <span className="font-bold text-slate-900">{formatRupiah(selectedTrx.nominal)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-400">Token Dummy:</span>
-                  <span className="text-xs text-emerald-600 font-mono">dummy-snap-{selectedTrx.id_trx}</span>
+                  <span className="text-slate-400">Snap Token:</span>
+                  <span className="text-xs text-emerald-600 font-mono truncate max-w-[180px]" title={selectedTrx.token}>{selectedTrx.token || 'Tidak Ada'}</span>
                 </div>
               </div>
 
               <div className="text-center text-xs text-slate-500 py-1">
-                Karena token di-generate secara lokal di frontend, pilih tombol di bawah untuk mensimulasikan respons pembayaran dari Midtrans:
+                Karena script Midtrans Snap SDK gagal dimuat (atau diblokir), silakan gunakan simulator ini untuk menguji callback pembayaran menggunakan token asli dari backend:
               </div>
 
               {/* Tombol Aksi Simulasi */}
