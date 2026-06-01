@@ -6,12 +6,7 @@ export const fetchTagihan = async (idUser) => {
     const timestamp = Date.now();
     const response = await fetch(`${BASE_URL}?action=getKas&id_user=${idUser}&_t=${timestamp}`, {
       method: 'GET',
-      redirect: 'follow', // KRUSIAL UNTUK APPS SCRIPT
-      headers: {
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-        'Pragma': 'no-cache',
-        'Expires': '0'
-      }
+      redirect: 'follow' // KRUSIAL UNTUK APPS SCRIPT
     });
     
     const result = await response.json();
@@ -69,12 +64,7 @@ export const fetchMidtransToken = async (idTrx, nominal, idUser) => {
 export const fetchUsersFromSheet = async () => {
   try {
     const timestamp = Date.now();
-    const response = await fetch(`https://docs.google.com/spreadsheets/d/1pRFCiWAQD_4qG9xpUrCen0hESVG8rQAhVi1PF8pixyg/export?format=csv&gid=0&_t=${timestamp}`, {
-      headers: {
-        'Cache-Control': 'no-cache',
-        'Pragma': 'no-cache'
-      }
-    });
+    const response = await fetch(`https://docs.google.com/spreadsheets/d/1pRFCiWAQD_4qG9xpUrCen0hESVG8rQAhVi1PF8pixyg/export?format=csv&gid=0&_t=${timestamp}`);
     const csvText = await response.text();
     
     // Parse CSV sederhana
